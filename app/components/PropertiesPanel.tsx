@@ -12,7 +12,15 @@ interface GeometryObject {
     | "rectangle"
     | "circle"
     | "line"
-    | "extruded";
+    | "extruded"
+    | "cad_box"
+    | "cad_cylinder"
+    | "cad_sphere"
+    | "cad_union"
+    | "cad_difference"
+    | "cad_intersection"
+    | "cad_fillet"
+    | "cad_chamfer";
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
@@ -24,6 +32,11 @@ interface GeometryObject {
   width?: number;
   height?: number;
   radius?: number;
+  // CAD-specific properties
+  cadShape?: any;
+  cadMesh?: any;
+  filletRadius?: number;
+  chamferDistance?: number;
 }
 
 interface PropertiesPanelProps {
@@ -310,6 +323,93 @@ export default function PropertiesPanel({
                     />
                     <span className="text-xs text-gray-400">m</span>
                   </div>
+                )}
+
+                {/* CAD-specific properties */}
+                {selectedObject.filletRadius !== undefined && (
+                  <div className="flex items-center space-x-2">
+                    <span className="w-12 text-xs font-medium text-gray-500">
+                      Fillet:
+                    </span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={selectedObject.filletRadius.toFixed(2)}
+                      onChange={(e) => {
+                        const newRadius = parseFloat(e.target.value) || 0.1;
+                        onUpdateObject(selectedObject.id, {
+                          filletRadius: newRadius,
+                        });
+                      }}
+                      className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded-md"
+                    />
+                    <span className="text-xs text-gray-400">m</span>
+                  </div>
+                )}
+                {selectedObject.chamferDistance !== undefined && (
+                  <div className="flex items-center space-x-2">
+                    <span className="w-12 text-xs font-medium text-gray-500">
+                      Chamfer:
+                    </span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min="0.1"
+                      value={selectedObject.chamferDistance.toFixed(2)}
+                      onChange={(e) => {
+                        const newDistance = parseFloat(e.target.value) || 0.1;
+                        onUpdateObject(selectedObject.id, {
+                          chamferDistance: newDistance,
+                        });
+                      }}
+                      className="flex-1 px-2 py-1 text-xs border border-gray-300 rounded-md"
+                    />
+                    <span className="text-xs text-gray-400">m</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* CAD Object Information */}
+          {selectedObject.type.startsWith("cad_") && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                CAD Information
+              </label>
+              <div className="bg-blue-50 p-3 rounded-md">
+                <p className="text-xs text-blue-700 mb-1">
+                  <strong>Type:</strong>{" "}
+                  {selectedObject.type.replace("cad_", "").toUpperCase()}
+                </p>
+                <p className="text-xs text-blue-600">
+                  Professional CAD object created with OpenCascade.js
+                </p>
+                {selectedObject.type === "cad_union" && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Result of Boolean Union operation
+                  </p>
+                )}
+                {selectedObject.type === "cad_difference" && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Result of Boolean Difference operation
+                  </p>
+                )}
+                {selectedObject.type === "cad_intersection" && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Result of Boolean Intersection operation
+                  </p>
+                )}
+                {selectedObject.type === "cad_fillet" && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Filleted object with rounded edges
+                  </p>
+                )}
+                {selectedObject.type === "cad_chamfer" && (
+                  <p className="text-xs text-blue-600 mt-1">
+                    Chamfered object with angled edges
+                  </p>
                 )}
               </div>
             </div>

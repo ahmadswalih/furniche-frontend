@@ -1,14 +1,26 @@
-'use client';
+"use client";
 
-import * as THREE from 'three';
+import * as THREE from "three";
 
 interface GroundPlaneProps {
   activeTool: string;
   onCanvasClick: (point: THREE.Vector3) => void;
 }
 
-export default function GroundPlane({ activeTool, onCanvasClick }: GroundPlaneProps) {
-  const isDrawingTool = ['cube', 'cylinder', 'sphere', 'plane', 'rectangle', 'circle', 'line'].includes(activeTool);
+export default function GroundPlane({
+  activeTool,
+  onCanvasClick,
+}: GroundPlaneProps) {
+  const isDrawingTool = [
+    "cube",
+    "cylinder",
+    "sphere",
+    "plane",
+    "rectangle",
+    "circle",
+    "line",
+    "dxf_import",
+  ].includes(activeTool);
 
   const handleClick = (event: any) => {
     if (isDrawingTool) {

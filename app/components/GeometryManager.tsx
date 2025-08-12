@@ -3,6 +3,8 @@
 import { useRef, useState, useEffect } from "react";
 import * as THREE from "three";
 import { useThree } from "@react-three/fiber";
+import { Text } from "@react-three/drei";
+import React from "react";
 import GroundPlane from "./GroundPlane";
 import TransformControls from "./TransformControls";
 import InteractiveDrawing from "./InteractiveDrawing";
@@ -39,6 +41,9 @@ interface GeometryManagerProps {
   onObjectsChange: (objects: GeometryObject[]) => void;
   selectedObject: string | null;
   onSelectObject: (objectId: string | null) => void;
+  // DXF import support
+  isDxfPreviewing?: boolean;
+  onDxfPlacement?: (position: [number, number, number]) => void;
 }
 
 function GeometryObject({
@@ -68,11 +73,28 @@ function GeometryObject({
       case "rectangle":
         return <planeGeometry args={[1, 1]} />;
       case "circle":
-        return <circleGeometry args={[0.5, 16]} />;
+        return <circleGeometry args={[object.radius || 0.5, 32]} />;
       case "line":
         return null;
       case "extruded":
-        if (object.shape && object.extrudeDepth) {
+        if (object.points && object.points.length >= 3) {
+          const shape = new THREE.Shape();
+          shape.moveTo(object.points[0].x, object.points[0].y);
+          for (let i = 1; i < object.points.length; i++) {
+            shape.lineTo(object.points[i].x, object.points[i].y);
+          }
+          if (object.closed) {
+            shape.closePath();
+          }
+          return (
+            <extrudeGeometry
+              args={[
+                shape,
+                { depth: object.depth || 0.1, bevelEnabled: false },
+              ]}
+            />
+          );
+        } else if (object.shape && object.extrudeDepth) {
           return (
             <extrudeGeometry
               args={[
@@ -83,6 +105,33 @@ function GeometryObject({
           );
         }
         return <boxGeometry args={[1, 1, 1]} />;
+      case "arc":
+        const arcSegments = Math.max(
+          8,
+          Math.floor(
+            ((object.endAngle - object.startAngle) / (Math.PI / 16)) * 32
+          )
+        );
+        return (
+          <ringGeometry
+            args={[
+              (object.radius || 1) * 0.95,
+              object.radius || 1,
+              arcSegments,
+              1,
+              object.startAngle || 0,
+              (object.endAngle || Math.PI * 2) - (object.startAngle || 0),
+            ]}
+          />
+        );
+      case "ellipse":
+        return <circleGeometry args={[object.radius || 0.5, 32]} />;
+      case "spline":
+        return null; // Will be handled specially below
+      case "text":
+        return null; // Will be handled specially below
+      case "point":
+        return <sphereGeometry args={[0.05, 8, 8]} />;
       default:
         return <boxGeometry args={[1, 1, 1]} />;
     }
@@ -95,11 +144,88 @@ function GeometryObject({
     ]);
     return (
       <mesh onClick={onClick}>
-        <tubeGeometry args={[curve, 2, 0.02, 8, false]} />
+        <tubeGeometry args={[curve, 2, 0.05, 8, false]} />
         <meshBasicMaterial
           color={isSelected ? "#4ade80" : object.color}
           opacity={isSelected ? 0.7 : 1}
           transparent={isSelected}
+        />
+      </mesh>
+    );
+  }
+
+  // Handle spline objects
+  if (object.type === "spline" && object.points && object.points.length >= 2) {
+    const curve3D = new THREE.CatmullRomCurve3(
+      object.points.map((p) => new THREE.Vector3(p.x, 0, p.y))
+    );
+    return (
+      <mesh onClick={onClick}>
+        <tubeGeometry args={[curve3D, 64, 0.05, 8, false]} />
+        <meshBasicMaterial
+          color={isSelected ? "#4ade80" : object.color}
+          opacity={isSelected ? 0.7 : 1}
+          transparent={isSelected}
+        />
+      </mesh>
+    );
+  }
+
+  // Handle text objects
+  if (object.type === "text") {
+    return (
+      <Text
+        position={object.position}
+        fontSize={0.3}
+        color={isSelected ? "#4ade80" : object.color}
+        anchorX="center"
+        anchorY="middle"
+        onClick={onClick}
+      >
+        {object.text || "[TEXT]"}
+      </Text>
+    );
+  }
+
+  // Handle arc objects specially for proper rotation
+  if (object.type === "arc") {
+    return (
+      <mesh
+        ref={ref}
+        position={object.position}
+        rotation={[Math.PI / 2, 0, 0]} // Rotate to lie flat on XZ plane
+        scale={object.scale}
+        onClick={onClick}
+      >
+        {renderGeometry()}
+        <meshStandardMaterial
+          color={isSelected ? "#4ade80" : object.color}
+          wireframe={isSelected}
+          transparent={isSelected}
+          opacity={isSelected ? 0.7 : 1}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+    );
+  }
+
+  // Handle circle objects specially for proper rotation
+  if (object.type === "circle") {
+    return (
+      <mesh
+        ref={ref}
+        position={object.position}
+        rotation={[Math.PI / 2, 0, 0]} // Rotate to lie flat on XZ plane
+        scale={object.scale}
+        onClick={onClick}
+      >
+        {renderGeometry()}
+        <meshStandardMaterial
+          color={isSelected ? "#4ade80" : object.color}
+          wireframe={isSelected}
+          transparent={isSelected}
+          opacity={isSelected ? 0.7 : 1}
+          side={THREE.DoubleSide}
         />
       </mesh>
     );
@@ -130,6 +256,8 @@ export default function GeometryManager({
   onObjectsChange,
   selectedObject,
   onSelectObject,
+  isDxfPreviewing = false,
+  onDxfPlacement,
 }: GeometryManagerProps) {
   const { camera, raycaster, mouse } = useThree();
   const selectedMeshRef = useRef<THREE.Mesh>(null);
@@ -222,6 +350,13 @@ export default function GeometryManager({
   };
 
   const handleGroundClick = (point: THREE.Vector3) => {
+    // Handle DXF placement
+    if (isDxfPreviewing && onDxfPlacement) {
+      const position: [number, number, number] = [point.x, 0, point.z];
+      onDxfPlacement(position);
+      return;
+    }
+
     // Only handle non-interactive drawing tools
     if (["cube", "cylinder", "sphere", "plane"].includes(activeTool)) {
       let position: [number, number, number] = [point.x, 0.5, point.z];
@@ -241,11 +376,16 @@ export default function GeometryManager({
     activeTool
   );
 
+  // Debug logging for objects
+  React.useEffect(() => {
+    console.log("📦 GeometryManager received objects:", objects);
+  }, [objects]);
+
   return (
     <group>
-      {!isInteractiveTool && (
+      {(!isInteractiveTool || isDxfPreviewing) && (
         <GroundPlane
-          activeTool={activeTool}
+          activeTool={isDxfPreviewing ? "dxf_import" : activeTool}
           onCanvasClick={handleGroundClick}
         />
       )}

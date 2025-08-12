@@ -15,40 +15,81 @@ import {
   Diameter,
   FileText,
   Upload,
+  Merge,
+  Scissors,
+  SquaresIntersect,
+  CornerRightUp,
+  Triangle,
+  Download,
+  Cog,
 } from "lucide-react";
 
 interface Tool {
   id: string;
   name: string;
   icon: React.ComponentType<any>;
-  category: "draw" | "model" | "modify" | "view" | "file";
+  category: "draw" | "model" | "modify" | "view" | "file" | "cad" | "boolean";
 }
 
 const tools: Tool[] = [
+  // Basic tools
   { id: "select", name: "Select", icon: MousePointer, category: "view" },
   { id: "move", name: "Move", icon: Move, category: "modify" },
   { id: "rotate", name: "Rotate", icon: RotateCcw, category: "modify" },
   { id: "scale", name: "Scale", icon: Scale, category: "modify" },
+
+  // Drawing tools
   { id: "line", name: "Line", icon: Minus, category: "draw" },
   { id: "rectangle", name: "Rectangle", icon: Square, category: "draw" },
   { id: "circle", name: "Circle", icon: Circle, category: "draw" },
+
+  // Basic 3D shapes
   { id: "cube", name: "Cube", icon: Box, category: "model" },
   { id: "cylinder", name: "Cylinder", icon: Cylinder, category: "model" },
   { id: "sphere", name: "Sphere", icon: Diameter, category: "model" },
+
+  // Professional CAD shapes (OpenCascade)
+  { id: "cad_box", name: "CAD Box", icon: Box, category: "cad" },
+  { id: "cad_cylinder", name: "CAD Cylinder", icon: Cylinder, category: "cad" },
+  { id: "cad_sphere", name: "CAD Sphere", icon: Diameter, category: "cad" },
+
+  // Boolean operations
+  { id: "cad_union", name: "Union", icon: Merge, category: "boolean" },
+  {
+    id: "cad_difference",
+    name: "Difference",
+    icon: Scissors,
+    category: "boolean",
+  },
+  {
+    id: "cad_intersection",
+    name: "Intersection",
+    icon: SquaresIntersect,
+    category: "boolean",
+  },
+
+  // Advanced CAD operations
+  { id: "cad_fillet", name: "Fillet", icon: CornerRightUp, category: "cad" },
+  { id: "cad_chamfer", name: "Chamfer", icon: Triangle, category: "cad" },
+
+  // File operations
   { id: "extrude", name: "Extrude", icon: ArrowUp, category: "modify" },
   { id: "import-dxf", name: "Import DXF", icon: Upload, category: "file" },
+  { id: "export-step", name: "Export STEP", icon: Download, category: "file" },
 ];
 
 interface ToolbarProps {
   activeTool: string;
   onToolChange: (toolId: string) => void;
   onDxfImport?: (file: File) => void;
+  onStepExport?: () => void;
 }
 
 export default function Toolbar({
   activeTool,
   onToolChange,
   onDxfImport,
+  onStepExport,
 }: ToolbarProps) {
   const [collapsed, setCollapsed] = useState(false);
 
@@ -72,6 +113,10 @@ export default function Toolbar({
         }
       };
       input.click();
+    } else if (toolId === "export-step") {
+      if (onStepExport) {
+        onStepExport();
+      }
     } else {
       onToolChange(toolId);
     }

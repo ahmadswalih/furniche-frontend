@@ -38,7 +38,7 @@ function Scene({
       <directionalLight position={[5, 5, 5]} intensity={1} />
 
       <Grid
-        args={[20, 20]}
+        args={[100, 100]} // Larger grid
         position={[0, -0.01, 0]}
         cellSize={1}
         cellThickness={0.5}
@@ -46,9 +46,9 @@ function Scene({
         sectionSize={5}
         sectionThickness={1}
         sectionColor="#9d4b4b"
-        fadeDistance={25}
-        fadeStrength={1}
-        followCamera={false}
+        fadeDistance={50} // Larger fade distance
+        fadeStrength={0.8}
+        followCamera={true} // Follow camera for infinite grid
         infiniteGrid={true}
       />
 
