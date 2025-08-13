@@ -33,15 +33,20 @@ interface Tool {
 
 const tools: Tool[] = [
   // Basic tools
-  { id: "select", name: "Select", icon: MousePointer, category: "view" },
-  { id: "move", name: "Move", icon: Move, category: "modify" },
-  { id: "rotate", name: "Rotate", icon: RotateCcw, category: "modify" },
-  { id: "scale", name: "Scale", icon: Scale, category: "modify" },
+  {
+    id: "select",
+    name: "Select (Space)",
+    icon: MousePointer,
+    category: "view",
+  },
+  { id: "move", name: "Move (M)", icon: Move, category: "modify" },
+  { id: "rotate", name: "Rotate (Q)", icon: RotateCcw, category: "modify" },
+  { id: "scale", name: "Scale (S)", icon: Scale, category: "modify" },
 
   // Drawing tools
-  { id: "line", name: "Line", icon: Minus, category: "draw" },
-  { id: "rectangle", name: "Rectangle", icon: Square, category: "draw" },
-  { id: "circle", name: "Circle", icon: Circle, category: "draw" },
+  { id: "line", name: "Line (L)", icon: Minus, category: "draw" },
+  { id: "rectangle", name: "Rectangle (R)", icon: Square, category: "draw" },
+  { id: "circle", name: "Circle (C)", icon: Circle, category: "draw" },
 
   // Basic 3D shapes
   { id: "cube", name: "Cube", icon: Box, category: "model" },
@@ -166,17 +171,19 @@ export default function Toolbar({
                         e.stopPropagation();
                         handleToolClick(tool.id);
                       }}
-                      className={`p-2 rounded-md text-sm border transition-colors cursor-pointer ${
+                      className={`p-2 rounded text-sm transition-all cursor-pointer shadow-sm ${
                         activeTool === tool.id
-                          ? "bg-blue-100 border-blue-300 text-blue-700"
-                          : "bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-600"
+                          ? "bg-blue-500 text-white shadow-md scale-105"
+                          : "bg-white border border-gray-300 hover:bg-gray-50 hover:shadow text-gray-700"
                       }`}
                       title={tool.name}
                     >
                       <div className="flex justify-center mb-1">
                         <IconComponent size={16} />
                       </div>
-                      <div className="text-xs">{tool.name}</div>
+                      <div className="text-xs font-medium">
+                        {tool.name.split(" (")[0]}
+                      </div>
                     </button>
                   );
                 })}
