@@ -8,6 +8,7 @@ import React from "react";
 import GroundPlane from "./GroundPlane";
 import TransformControls from "./TransformControls";
 import InteractiveDrawing from "./InteractiveDrawing";
+import AdvancedRectangleTool from "./AdvancedRectangleTool";
 
 interface GeometryObject {
   id: string;
@@ -372,9 +373,33 @@ export default function GeometryManager({
   };
 
   const isTransformTool = ["move", "rotate", "scale"].includes(activeTool);
-  const isInteractiveTool = ["line", "rectangle", "circle"].includes(
-    activeTool
-  );
+  const isInteractiveTool = ["line", "circle"].includes(activeTool);
+  const isAdvancedRectangleTool = activeTool === "rectangle";
+
+  // Handle advanced rectangle creation
+  const handleAdvancedRectangleCreate = (start: THREE.Vector3, end: THREE.Vector3) => {
+    const width = Math.abs(end.x - start.x);
+    const height = Math.abs(end.z - start.z);
+    const centerX = (start.x + end.x) / 2;
+    const centerZ = (start.z + end.z) / 2;
+
+    const newRectangle: GeometryObject = {
+      id: `advanced-rectangle-${Date.now()}`,
+      type: "rectangle",
+      position: [centerX, 0.01, centerZ],
+      rotation: [0, 0, 0],
+      scale: [width, 1, height],
+      color: "#3b82f6",
+      selected: false,
+      width,
+      height,
+      length: width,
+    };
+
+    console.log("🔷 Creating advanced rectangle:", newRectangle);
+    onObjectsChange([...objects, newRectangle]);
+    onSelectObject(newRectangle.id);
+  };
 
   // Debug logging for objects
   React.useEffect(() => {
@@ -383,7 +408,7 @@ export default function GeometryManager({
 
   return (
     <group>
-      {(!isInteractiveTool || isDxfPreviewing) && (
+      {(!isInteractiveTool && !isAdvancedRectangleTool || isDxfPreviewing) && (
         <GroundPlane
           activeTool={isDxfPreviewing ? "dxf_import" : activeTool}
           onCanvasClick={handleGroundClick}
@@ -396,6 +421,14 @@ export default function GeometryManager({
           onObjectCreate={handleInteractiveObjectCreate}
           onDrawingStart={() => setIsInteractiveDrawing(true)}
           onDrawingEnd={() => setIsInteractiveDrawing(false)}
+        />
+      )}
+
+      {isAdvancedRectangleTool && (
+        <AdvancedRectangleTool
+          isActive={true}
+          objects={objects}
+          onCreateRectangle={handleAdvancedRectangleCreate}
         />
       )}
 

@@ -16,6 +16,9 @@ import { LayerSystem } from "./services/LayerSystem";
 
 import RectangleRenderer from "./components/RectangleRenderer";
 import SimpleInteractiveDrawing from "./components/SimpleInteractiveDrawing";
+import WorkingRectangleTool from "./components/WorkingRectangleTool";
+import PushPullTool from "./components/PushPullTool";
+import ExtrusionRenderer from "./components/ExtrusionRenderer";
 import SketchUpKeyboardShortcuts from "./components/SketchUpKeyboardShortcuts";
 import SketchUpShortcutsDisplay from "./components/SketchUpShortcutsDisplay";
 import SketchUpToolIndicator from "./components/SketchUpToolIndicator";
@@ -102,6 +105,13 @@ export default function Home() {
   const [selectedRectangleId, setSelectedRectangleId] = useState<string | null>(
     null
   );
+  const [showRectangleManager, setShowRectangleManager] = useState(true);
+
+  // Extrusion state (for Push/Pull tool)
+  const [extrusions, setExtrusions] = useState<any[]>([]);
+  const [selectedExtrusionId, setSelectedExtrusionId] = useState<string | null>(
+    null
+  );
 
   // UI state
   const [showDXFImportModal, setShowDXFImportModal] = useState(false);
@@ -166,8 +176,29 @@ export default function Home() {
 
   // Rectangle selection handler
   const handleRectangleSelect = (rectangleId: string) => {
+    console.log("🔷 Selecting rectangle:", rectangleId);
     setSelectedRectangleId(rectangleId);
     setSelectedObjectId(null); // Clear other selections
+    setSelectedExtrusionId(null); // Clear extrusion selections
+  };
+
+  // Extrusion creation handler (for Push/Pull tool)
+  const handleExtrusionCreate = (extrusion: any) => {
+    console.log("🏗️ Extrusion created:", extrusion);
+    setExtrusions((prev) => [...prev, extrusion]);
+
+    // Add to selected layer if one is selected
+    if (selectedLayerId) {
+      layerSystem.addObjectToLayer(selectedLayerId, extrusion.id);
+      updateLayers();
+    }
+  };
+
+  // Extrusion selection handler
+  const handleExtrusionSelect = (extrusionId: string) => {
+    setSelectedExtrusionId(extrusionId);
+    setSelectedRectangleId(null); // Clear other selections
+    setSelectedObjectId(null);
   };
 
   // Initialize layers on mount
@@ -277,6 +308,7 @@ export default function Home() {
       "line",
       "rectangle",
       "circle",
+      "push-pull",
       "cad_box",
       "cad_cylinder",
       "cad_sphere",
@@ -284,7 +316,11 @@ export default function Home() {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
+    <div
+      className={`h-screen flex flex-col bg-gray-100 overflow-hidden max-w-full ${
+        activeTool === "rectangle" ? "cursor-crosshair" : "cursor-default"
+      }`}
+    >
       {/* SketchUp-style Keyboard Shortcuts */}
       <SketchUpKeyboardShortcuts
         activeTool={activeTool}
@@ -310,7 +346,17 @@ export default function Home() {
                       {typeof value === "number"
                         ? value.toFixed(2)
                         : String(value)}
-                      {typeof value === "number" && key !== "angle" ? "m" : ""}
+                      {typeof value === "number" && key === "volume"
+                        ? "m³"
+                        : ""}
+                      {typeof value === "number" &&
+                      (key === "baseArea" || key === "area")
+                        ? "m²"
+                        : ""}
+                      {typeof value === "number" &&
+                      !["angle", "volume", "baseArea", "area"].includes(key)
+                        ? "m"
+                        : ""}
                       {key === "angle" ? "°" : ""}
                     </span>
                   </div>
@@ -328,12 +374,12 @@ export default function Home() {
       />
 
       {/* Main Content Area */}
-      <div className="flex-1 flex">
+      <div className="flex-1 flex overflow-hidden">
         {/* Left Toolbar */}
         <SimpleToolbar activeTool={activeTool} onToolChange={setActiveTool} />
 
         {/* Canvas Area */}
-        <div className="flex-1 relative">
+        <div className="flex-1 relative overflow-hidden">
           {/* Layer Manager Overlay */}
           {showLayerManager && (
             <div className="absolute top-4 left-4 z-20">
@@ -350,74 +396,6 @@ export default function Home() {
             </div>
           )}
 
-          {/* Rectangle Management Panel */}
-          {rectangles.length > 0 && (
-            <div className="absolute top-4 left-96 z-20">
-              <div className="bg-white rounded-lg shadow-lg border border-gray-200 w-80">
-                <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-t-lg">
-                  <h3 className="text-lg font-semibold">
-                    🔷 Rectangle Manager
-                  </h3>
-                  <div className="text-sm opacity-90">
-                    {rectangles.length} rectangle
-                    {rectangles.length !== 1 ? "s" : ""} created
-                  </div>
-                </div>
-
-                <div className="max-h-64 overflow-y-auto">
-                  {rectangles.map((rectangle) => (
-                    <div
-                      key={rectangle.id}
-                      className={`p-3 border-b border-gray-100 cursor-pointer transition-colors ${
-                        selectedRectangleId === rectangle.id
-                          ? "bg-blue-50 border-l-4 border-blue-500"
-                          : "hover:bg-gray-50"
-                      }`}
-                      onClick={() => handleRectangleSelect(rectangle.id)}
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-lg">🔷</span>
-                          <span className="font-medium text-gray-900">
-                            {rectangle.width.toFixed(2)}m ×{" "}
-                            {rectangle.height.toFixed(2)}m
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {rectangle.area.toFixed(2)}m²
-                        </div>
-                      </div>
-
-                      <div className="mt-2 text-xs text-gray-600">
-                        <div>Perimeter: {rectangle.perimeter.toFixed(2)}m</div>
-                        <div>Layer: {rectangle.layerId}</div>
-                        <div>
-                          Created: {rectangle.createdAt.toLocaleTimeString()}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="p-3 bg-gray-50 border-t border-gray-200">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => setRectangles([])}
-                      className="flex-1 px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors"
-                    >
-                      🗑️ Clear All
-                    </button>
-                    <button
-                      onClick={() => setSelectedRectangleId(null)}
-                      className="flex-1 px-3 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors"
-                    >
-                      ✨ Deselect
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
           {/* DXF Info Panel (top-right) */}
           {backendDXFs.length > 0 && (
             <div className="absolute top-4 right-4 space-y-4 z-10">
@@ -447,6 +425,13 @@ export default function Home() {
               onRectangleCreate={handleRectangleCreate}
               onMeasurementUpdate={setDrawingMeasurements}
               selectedLayerId={selectedLayerId || undefined}
+              onBackgroundClick={() => {
+                // Auto-deselect when clicking on background
+                console.log("🎯 Background clicked - clearing all selections");
+                setSelectedRectangleId(null);
+                setSelectedObjectId(null);
+                setSelectedExtrusionId(null);
+              }}
             >
               {/* Interactive Drawing Tools (for other tools) */}
               {isDrawingTool(activeTool) && activeTool !== "rectangle" && (
@@ -455,6 +440,27 @@ export default function Home() {
                   onObjectCreate={(obj: any) => {
                     setObjects((prev) => [...prev, obj]);
                   }}
+                  onMeasurementUpdate={setDrawingMeasurements}
+                />
+              )}
+
+              {/* Working Rectangle Drawing Tool */}
+              {activeTool === "rectangle" && (
+                <WorkingRectangleTool
+                  activeTool={activeTool}
+                  onRectangleCreate={handleRectangleCreate}
+                  onMeasurementUpdate={setDrawingMeasurements}
+                  selectedLayerId={selectedLayerId || undefined}
+                  layers={layers}
+                />
+              )}
+
+              {/* Push/Pull Tool */}
+              {activeTool === "push-pull" && (
+                <PushPullTool
+                  activeTool={activeTool}
+                  rectangles={rectangles}
+                  onExtrusionCreate={handleExtrusionCreate}
                   onMeasurementUpdate={setDrawingMeasurements}
                 />
               )}
@@ -470,6 +476,15 @@ export default function Home() {
                 rectangles={rectangles}
                 selectedObjectId={selectedRectangleId || undefined}
                 onRectangleSelect={handleRectangleSelect}
+                selectedLayerId={selectedLayerId || undefined}
+                layers={layers}
+              />
+
+              {/* Extrusion Renderer */}
+              <ExtrusionRenderer
+                extrusions={extrusions}
+                selectedObjectId={selectedExtrusionId || undefined}
+                onExtrusionSelect={handleExtrusionSelect}
                 selectedLayerId={selectedLayerId || undefined}
                 layers={layers}
               />
@@ -557,6 +572,122 @@ export default function Home() {
         onClose={() => setShowDXFImportModal(false)}
         onImportComplete={handleBackendDXFImport}
       />
+
+      {/* Rectangle Manager Panel - Bottom Right */}
+      {rectangles.length > 0 && showRectangleManager && (
+        <div className="fixed bottom-20 right-4 z-50">
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 w-80">
+            <div className="bg-gradient-to-r from-green-500 to-green-600 text-white p-4 rounded-t-lg relative">
+              <h3 className="text-lg font-semibold pr-8">
+                🔷 Rectangle Manager
+              </h3>
+              <div className="text-sm opacity-90">
+                {rectangles.length} rectangle
+                {rectangles.length !== 1 ? "s" : ""} created
+              </div>
+              {/* Close Button */}
+              <button
+                onClick={() => setShowRectangleManager(false)}
+                className="absolute top-3 right-3 p-1 hover:bg-white/20 rounded-full transition-colors duration-200"
+                title="Close Rectangle Manager"
+                aria-label="Close Rectangle Manager"
+              >
+                <svg
+                  className="w-5 h-5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
+                </svg>
+              </button>
+            </div>
+
+            <div className="max-h-64 overflow-y-auto">
+              {rectangles.map((rectangle) => (
+                <div
+                  key={rectangle.id}
+                  className={`p-3 border-b border-gray-100 cursor-pointer transition-colors ${
+                    selectedRectangleId === rectangle.id
+                      ? "bg-blue-50 border-l-4 border-blue-500"
+                      : "hover:bg-gray-50"
+                  }`}
+                  onClick={() => handleRectangleSelect(rectangle.id)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-lg">🔷</span>
+                      <span className="font-medium text-gray-900">
+                        {rectangle.width.toFixed(2)}m ×{" "}
+                        {rectangle.height.toFixed(2)}m
+                      </span>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      {rectangle.area.toFixed(2)}m²
+                    </div>
+                  </div>
+
+                  <div className="mt-2 text-xs text-gray-600">
+                    <div>Perimeter: {rectangle.perimeter.toFixed(2)}m</div>
+                    <div>Layer: {rectangle.layerId}</div>
+                    <div>
+                      Created: {rectangle.createdAt.toLocaleTimeString()}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="p-3 bg-gray-50 border-t border-gray-200">
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setRectangles([])}
+                  className="flex-1 px-3 py-2 bg-red-500 text-white rounded text-sm hover:bg-red-600 transition-colors"
+                >
+                  🗑️ Clear All
+                </button>
+                <button
+                  onClick={() => setSelectedRectangleId(null)}
+                  className="flex-1 px-3 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors"
+                >
+                  ✨ Deselect
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Show Rectangle Manager Button (when hidden) */}
+      {rectangles.length > 0 && !showRectangleManager && (
+        <div className="fixed bottom-20 right-4 z-50">
+          <button
+            onClick={() => setShowRectangleManager(true)}
+            className="bg-green-500 hover:bg-green-600 text-white p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-110"
+            title="Show Rectangle Manager"
+            aria-label="Show Rectangle Manager"
+          >
+            <svg
+              className="w-6 h-6"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+              />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* SketchUp-style Keyboard Shortcuts Display */}
       <SketchUpShortcutsDisplay />

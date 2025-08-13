@@ -80,7 +80,7 @@ function SketchUpGroundPlane() {
         {Array.from({ length: 21 }, (_, i) => (
           <mesh key={`h-${i}`} position={[0, 0, (i - 10) * 10]}>
             <boxGeometry args={[100, 0.01, 0.02]} />
-            <meshBasicMaterial color="#e0e0e0" transparent opacity={0.3} />
+            <meshBasicMaterial color="#e0e0e0" transparent opacity={0.9} />
           </mesh>
         ))}
 
@@ -88,7 +88,7 @@ function SketchUpGroundPlane() {
         {Array.from({ length: 21 }, (_, i) => (
           <mesh key={`v-${i}`} position={[(i - 10) * 10, 0, 0]}>
             <boxGeometry args={[0.02, 0.01, 100]} />
-            <meshBasicMaterial color="#e0e0e0" transparent opacity={0.3} />
+            <meshBasicMaterial color="#e0e0e0" transparent opacity={0.9} />
           </mesh>
         ))}
       </group>
@@ -96,47 +96,140 @@ function SketchUpGroundPlane() {
   );
 }
 
-// SketchUp-style horizon and reference lines
+// SketchUp-style horizon and reference lines - TRULY UNLIMITED
 function SketchUpReference() {
+  const axisLength = 100000; // Massive length for unlimited feel
+
   return (
     <group>
-      {/* X-axis (Red) - Much more visible */}
+      {/* X-axis (Red) - Truly unlimited line segments */}
+      <lineSegments>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={2}
+            array={
+              new Float32Array([-axisLength, 0.001, 0, axisLength, 0.001, 0])
+            }
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial
+          color="#ff0000"
+          linewidth={4}
+          transparent
+          opacity={0.6}
+          depthTest={false}
+          depthWrite={false}
+        />
+      </lineSegments>
+
+      {/* Z-axis (Blue) - Truly unlimited line segments */}
+      <lineSegments>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={2}
+            array={
+              new Float32Array([0, 0.001, -axisLength, 0, 0.001, axisLength])
+            }
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial
+          color="#0066ff"
+          linewidth={4}
+          transparent
+          opacity={0.6}
+          depthTest={false}
+          depthWrite={false}
+        />
+      </lineSegments>
+
+      {/* Y-axis (Green) - Truly unlimited line segments */}
+      <lineSegments>
+        <bufferGeometry>
+          <bufferAttribute
+            attach="attributes-position"
+            count={2}
+            array={new Float32Array([0, -axisLength, 0, 0, axisLength, 0])}
+            itemSize={3}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial
+          color="#00cc00"
+          linewidth={4}
+          transparent
+          opacity={0.6}
+          depthTest={false}
+          depthWrite={false}
+        />
+      </lineSegments>
+
+      {/* Thick mesh axes for better visibility - TRULY UNLIMITED */}
       <mesh position={[0, 0.001, 0]}>
-        <boxGeometry args={[100, 0.03, 0.1]} />
-        <meshBasicMaterial color="#ff0000" transparent opacity={0.9} />
+        <boxGeometry args={[axisLength * 2, 0.05, 0.15]} />
+        <meshBasicMaterial
+          color="#ff0000"
+          transparent
+          opacity={0.7}
+          depthTest={false}
+          depthWrite={false}
+        />
       </mesh>
 
-      {/* Z-axis (Blue) - Much more visible */}
       <mesh position={[0, 0.001, 0]}>
-        <boxGeometry args={[0.1, 0.03, 100]} />
-        <meshBasicMaterial color="#0066ff" transparent opacity={0.9} />
+        <boxGeometry args={[0.15, 0.05, axisLength * 2]} />
+        <meshBasicMaterial
+          color="#0066ff"
+          transparent
+          opacity={0.7}
+          depthTest={false}
+          depthWrite={false}
+        />
       </mesh>
 
-      {/* Y-axis (Green) - Vertical line for height reference */}
       <mesh position={[0, 0, 0]}>
-        <boxGeometry args={[0.1, 100, 0.1]} />
-        <meshBasicMaterial color="#00cc00" transparent opacity={0.9} />
+        <boxGeometry args={[0.15, axisLength * 2, 0.15]} />
+        <meshBasicMaterial
+          color="#00cc00"
+          transparent
+          opacity={0.7}
+          depthTest={false}
+          depthWrite={false}
+        />
       </mesh>
 
-      {/* Center point marker */}
+      {/* Center point marker - small and subtle */}
       <mesh position={[0, 0.001, 0]}>
-        <sphereGeometry args={[0.15]} />
-        <meshBasicMaterial color="#333333" />
+        <sphereGeometry args={[0.06]} />
+        <meshBasicMaterial color="#666666" transparent opacity={0.6} />
       </mesh>
 
-      {/* Axis end markers for better visibility */}
-      <mesh position={[50, 0.001, 0]}>
-        <sphereGeometry args={[0.2]} />
-        <meshBasicMaterial color="#ff0000" />
-      </mesh>
-      <mesh position={[0, 0.001, 50]}>
-        <sphereGeometry args={[0.2]} />
-        <meshBasicMaterial color="#0066ff" />
-      </mesh>
-      <mesh position={[0, 50, 0]}>
-        <sphereGeometry args={[0.2]} />
-        <meshBasicMaterial color="#00cc00" />
-      </mesh>
+      {/* Axis markers at regular intervals - subtle */}
+      {/* X-axis markers every 100 units */}
+      {Array.from({ length: 11 }, (_, i) => (
+        <mesh key={`x-marker-${i}`} position={[(i - 5) * 100, 0.002, 0]}>
+          <sphereGeometry args={[0.1]} />
+          <meshBasicMaterial color="#ff0000" transparent opacity={0.9} />
+        </mesh>
+      ))}
+
+      {/* Z-axis markers every 100 units */}
+      {Array.from({ length: 11 }, (_, i) => (
+        <mesh key={`z-marker-${i}`} position={[0, 0.002, (i - 5) * 100]}>
+          <sphereGeometry args={[0.1]} />
+          <meshBasicMaterial color="#0066ff" transparent opacity={0.9} />
+        </mesh>
+      ))}
+
+      {/* Y-axis markers every 100 units */}
+      {Array.from({ length: 11 }, (_, i) => (
+        <mesh key={`y-marker-${i}`} position={[0, (i - 5) * 100, 0]}>
+          <sphereGeometry args={[0.1]} />
+          <meshBasicMaterial color="#00cc00" transparent />
+        </mesh>
+      ))}
     </group>
   );
 }
@@ -147,12 +240,14 @@ function Scene({
   onRectangleCreate,
   onMeasurementUpdate,
   selectedLayerId,
+  onBackgroundClick,
 }: {
   children?: ReactNode;
   activeTool?: string;
   onRectangleCreate?: (rectangle: any) => void;
   onMeasurementUpdate?: (measurements: any) => void;
   selectedLayerId?: string;
+  onBackgroundClick?: () => void;
 }) {
   const isDrawingTool =
     activeTool &&
@@ -191,37 +286,50 @@ function Scene({
         intensity={0.3}
       />
 
-      {/* SketchUp-style background gradient */}
-      <Environment background>
-        <mesh>
-          <sphereGeometry args={[100]} />
-          <meshBasicMaterial color="#e6e6e6" side={THREE.BackSide} />
-        </mesh>
-      </Environment>
+      {/* Clean background - no dome */}
 
       {/* SketchUp-style ground plane and references */}
       <SketchUpGroundPlane />
       <SketchUpReference />
 
+      {/* Invisible background plane for deselection clicks */}
+      {onBackgroundClick && (
+        <mesh
+          position={[0, -0.1, 0]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          onClick={(e) => {
+            // Only deselect if we're not drawing rectangles
+            if (activeTool !== "rectangle") {
+              console.log('🎯 Background plane clicked - deselecting');
+              onBackgroundClick();
+            }
+          }}
+          visible={false}
+        >
+          <planeGeometry args={[10000, 10000]} />
+          <meshBasicMaterial transparent opacity={0} />
+        </mesh>
+      )}
+
       {children}
 
       <OrbitControls
         enablePan={!isInteractiveTool}
-        enableZoom={!isInteractiveTool}
+        enableZoom={true}
         enableRotate={!isInteractiveTool}
-        minDistance={1}
-        maxDistance={200}
+        minDistance={0.0001}
+        maxDistance={100000}
         target={[0, 0, 0]}
         minPolarAngle={0}
         maxPolarAngle={Math.PI / 2}
         zoomToCursor={true}
-        zoomSpeed={1.5}
-        panSpeed={2.0}
+        zoomSpeed={3.0}
+        panSpeed={3.0}
         rotateSpeed={1.2}
         dampingFactor={0.05}
         enableDamping={true}
         enableKeys={true}
-        keyPanSpeed={20}
+        keyPanSpeed={30}
         enableKeyPan={true}
         screenSpacePanning={true}
         mouseButtons={{
@@ -286,6 +394,7 @@ interface Canvas3DProps {
   onRectangleCreate?: (rectangle: any) => void;
   onMeasurementUpdate?: (measurements: any) => void;
   selectedLayerId?: string;
+  onBackgroundClick?: () => void;
 }
 
 export default function Canvas3D({
@@ -294,6 +403,7 @@ export default function Canvas3D({
   onRectangleCreate,
   onMeasurementUpdate,
   selectedLayerId,
+  onBackgroundClick,
 }: Canvas3DProps) {
   const [showInstructions, setShowInstructions] = useState(true);
   const [isPanning, setIsPanning] = useState(false);
@@ -328,7 +438,7 @@ export default function Canvas3D({
               🖱️ <strong>Right Click + Drag:</strong> Pan view
             </div>
             <div>
-              🖱️ <strong>Scroll Wheel:</strong> Zoom to cursor
+              🖱️ <strong>Scroll Wheel:</strong> Unlimited zoom to cursor
             </div>
             <div>
               ⌨️ <strong>Arrow Keys:</strong> Pan view
@@ -383,8 +493,8 @@ export default function Canvas3D({
         camera={{
           position: [20, 20, 20],
           fov: 50,
-          near: 0.1,
-          far: 1000,
+          near: 0.00001,
+          far: 1000000,
         }}
         gl={{
           antialias: true,
@@ -415,6 +525,7 @@ export default function Canvas3D({
             onRectangleCreate={onRectangleCreate}
             onMeasurementUpdate={onMeasurementUpdate}
             selectedLayerId={selectedLayerId}
+            onBackgroundClick={onBackgroundClick}
           >
             {children}
           </Scene>

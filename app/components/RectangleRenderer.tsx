@@ -63,6 +63,8 @@ export default function RectangleRenderer({
 
         if (!isVisible) return null;
 
+        console.log('🔷 Rendering rectangle:', rectangle.id, 'isVisible:', isVisible, 'position:', rectangle.position);
+        
         return (
           <group key={rectangle.id}>
             {/* Main Rectangle Mesh */}
@@ -70,8 +72,13 @@ export default function RectangleRenderer({
               position={rectangle.position}
               rotation={rectangle.rotation}
               scale={rectangle.scale}
+              onPointerOver={(e) => {
+                e.stopPropagation();
+                console.log('🔷 Rectangle hovered:', rectangle.id);
+              }}
               onClick={(e) => {
                 e.stopPropagation();
+                console.log('🔷 Rectangle clicked:', rectangle.id, 'Event:', e);
                 onRectangleSelect(rectangle.id);
               }}
               userData={{
@@ -83,7 +90,7 @@ export default function RectangleRenderer({
             >
               {/* Use plane geometry for proper rectangle rendering */}
               <planeGeometry args={[rectangle.width, rectangle.height]} />
-              <meshStandardMaterial
+              <meshBasicMaterial
                 color={isSelected ? "#ff6b6b" : layerColor}
                 transparent
                 opacity={opacity}
@@ -106,6 +113,8 @@ export default function RectangleRenderer({
                   opacity={0.3}
                   side={THREE.DoubleSide}
                   wireframe={true}
+                  depthTest={false}
+                  depthWrite={false}
                 />
               </mesh>
             )}
@@ -120,9 +129,11 @@ export default function RectangleRenderer({
               </edgesGeometry>
               <lineBasicMaterial
                 color={isSelected ? "#ff6b6b" : "#1e40af"}
-                linewidth={isSelected ? 3 : 1}
+                linewidth={isSelected ? 3 : 2}
                 transparent
                 opacity={opacity}
+                depthTest={false}
+                depthWrite={false}
               />
             </lineSegments>
 
@@ -138,7 +149,11 @@ export default function RectangleRenderer({
                   ]}
                 >
                   <sphereGeometry args={[0.03]} />
-                  <meshBasicMaterial color="#ef4444" />
+                  <meshBasicMaterial 
+                    color="#ef4444"
+                    depthTest={false}
+                    depthWrite={false}
+                  />
                 </mesh>
 
                 {/* End Point */}
@@ -150,7 +165,11 @@ export default function RectangleRenderer({
                   ]}
                 >
                   <sphereGeometry args={[0.03]} />
-                  <meshBasicMaterial color="#ef4444" />
+                  <meshBasicMaterial 
+                    color="#ef4444"
+                    depthTest={false}
+                    depthWrite={false}
+                  />
                 </mesh>
 
                 {/* Center Point */}
@@ -162,7 +181,11 @@ export default function RectangleRenderer({
                   ]}
                 >
                   <sphereGeometry args={[0.02]} />
-                  <meshBasicMaterial color="#10b981" />
+                  <meshBasicMaterial 
+                    color="#10b981"
+                    depthTest={false}
+                    depthWrite={false}
+                  />
                 </mesh>
               </>
             )}
@@ -175,13 +198,21 @@ export default function RectangleRenderer({
                 {/* Width Line */}
                 <mesh position={[0, 0, 0]}>
                   <cylinderGeometry args={[0.005, 0.005, rectangle.width]} />
-                  <meshBasicMaterial color="#3b82f6" />
+                  <meshBasicMaterial 
+                    color="#3b82f6"
+                    depthTest={false}
+                    depthWrite={false}
+                  />
                 </mesh>
 
                 {/* Height Line */}
                 <mesh position={[0, 0, 0]} rotation={[0, 0, Math.PI / 2]}>
                   <cylinderGeometry args={[0.005, 0.005, rectangle.height]} />
-                  <meshBasicMaterial color="#10b981" />
+                  <meshBasicMaterial 
+                    color="#10b981"
+                    depthTest={false}
+                    depthWrite={false}
+                  />
                 </mesh>
               </group>
             )}
